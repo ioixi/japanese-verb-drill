@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>動詞活用ドリル (学生用)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #121214;
+            --card-bg: #1e1e24;
+            --text-main: #f5f5f7;
+            --text-sub: #b3b3b8;
+            --primary: #00aaff;
+            --correct: #2e7d32;
+            --incorrect: #c62828;
+            --accent: #deff9a;
+        }
+        body { 
+            font-family: "UD Digi Kyokasho NK-B", "UD デジタル教科書体 NK-B", "UD Digi Kyokasho N-B", "UD デジタル教科書体 N-B", "Hiragino Maru Gothic ProN", "ヒラギノ丸ゴ ProN", "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "BlinkMacSystemFont", "Segoe UI", Roboto, sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main);
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+        #setup-screen, #drill-screen, #result-screen { width: 95%; max-width: 600px; margin-top: 20px; text-align: center; position: relative; }
+        .hidden { display: none !important; }
+        
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        .score-item { margin: 0 5px; color: var(--text-main); }
+        .score-num { font-weight: bold; color: var(--accent); }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 40px 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            min-height: 240px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .form-group {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        label { display: block; margin-bottom: 10px; font-weight: bold; color: var(--text-sub); font-size: 0.95rem; }
+        select, input[type="number"] {
+            width: 100%; padding: 12px; background: #2a2a32; border: 1px solid #444; 
+            color: #fff; border-radius: 8px; font-size: 1rem; box-sizing: border-box;
+            font-family: sans-serif;
+        }
+        .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 5px; }
+        .checkbox-group label { display: flex; align-items: center; gap: 8px; color: #fff; cursor: pointer; font-size: 1rem; }
+        
+        button {
+            width: 100%; padding: 15px; border: none; border-radius: 12px; 
+            font-size: 1.1rem; font-weight: bold; cursor: pointer; 
+            transition: transform 0.1s, opacity 0.2s; margin-bottom: 10px;
+            font-family: sans-serif;
+        }
+        button:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--correct); color: white; }
+        .btn-danger { background: var(--incorrect); color: white; }
+        .btn-secondary { background: #444; color: #ccc; }
+
+        .judge-container { display: flex; gap: 15px; width: 100%; }
+        
+        #display-target-form { font-size: 1.4rem; font-weight: bold; margin-bottom: 25px; font-family: sans-serif; }
+        .arrow-accent { color: var(--accent); }
+        .instruction-text { color: var(--text-sub); }
+
+        #display-word-area { 
+            font-size: 3.2rem; 
+            font-weight: bold; 
+            color: var(--accent); 
+            margin: 10px 0;
+            line-height: 1.6;
+            letter-spacing: 0.05em;
+        }
+        #display-word-area rt {
+            font-size: 1.25rem;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            padding-bottom: 6px;
+        }
+        
+        #display-answer-block { margin-top: 20px; padding-top: 20px; border-top: 1px dashed #444; width: 100%; }
+        #display-answer-word { font-size: 3.4rem; font-weight: bold; color: #ffeb3b; line-height: 1.6; letter-spacing: 0.05em; }
+        #display-answer-word rt { font-size: 1.3rem; font-weight: bold; letter-spacing: 0.05em; padding-bottom: 6px; }
+
+        .file-status { font-size: 0.9rem; color: #888; margin-top: 5px; text-align: center; font-family: sans-serif; font-weight: bold; }
+        .shortcut-tip { font-size: 0.8rem; color: #555; margin-top: 15px; text-align: center; font-family: sans-serif; }
+        
+        #wrong-list-area { width: 100%; height: 120px; background: #2a2a32; color: #fff; border: 1px solid #444; border-radius: 8px; padding: 10px; box-sizing: border-box; font-size: 0.9rem; margin-bottom: 10px; text-align: left; font-family: sans-serif; }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h2 style="color: var(--primary); margin-bottom: 5px; font-size: 1.8rem; font-family: sans-serif;">動詞活用ドリル</h2>
+        <p style="color: var(--text-sub); font-size: 0.95rem; margin-bottom: 25px; font-family: sans-serif;">じぶんで 練習 する アプリ</p>
+        
+        <div class="form-group" style="text-align: center; padding: 15px;">
+            <div id="file-status-text" class="file-status" style="color: #ffb74d;">⏳ データを よみこんでいます...</div>
+        </div>
+
+        <div class="form-group">
+            <label>📖 どの課（か）を 練習 しますか？</label>
+            <div style="display: flex; align-items: center; gap: 10px; color: var(--text-main); font-weight: bold;">
+                <input type="number" id="filter-lesson-start" value="1" min="1" style="width: 80px; text-align: center;"> 
+                <span>から</span>
+                <input type="number" id="filter-lesson-end" value="50" min="1" style="width: 80px; text-align: center;">
+                <span>課まで</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>👥 動詞の グループ</label>
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="group-1" checked> 1グループ</label>
+                <label><input type="checkbox" id="group-2" checked> 2グループ</label>
+                <label><input type="checkbox" id="group-3" checked> 3グループ</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>🎯 なに形（けい）を 練習 しますか？</label>
+            <div class="checkbox-group" id="form-checkboxes">
+                <span style="color:#666; font-size:0.9rem;">データを よみこむまで お待ちください</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>❓ 問題の かず</label>
+            <select id="question-count-select">
+                <option value="5">5もん</option>
+                <option value="10" selected>10もん</option>
+                <option value="20">20もん</option>
+                <option value="30">30もん</option>
+            </select>
+        </div>
+
+        <button id="start-btn" class="btn-primary" disabled style="margin-top: 15px; opacity: 0.5;">はじめる</button>
+    </div>
+
+    <div id="drill-screen" class="hidden">
+        <div class="score-board">
+            <div class="score-item">問題: <span id="score-current-idx" class="score-num">0</span> / <span id="score-max-questions" class="score-num">0</span></div>
+            <div class="score-item">できた: <span id="score-correct" class="score-num">0</span></div>
+            <div class="score-item">連勝: <span id="score-combo" class="score-num">0</span></div>
+        </div>
+
+        <div class="card">
+            <div id="display-target-form">
+                <span class="arrow-accent">➔</span> <span id="instruction-content" class="instruction-text">【 Loading 】</span>
+            </div>
+            
+            <div id="display-word-area"></div>
+            
+            <div id="display-answer-block" class="hidden">
+                <div id="display-answer-word"></div>
+            </div>
+        </div>
+
+        <div id="action-area">
+            <button id="show-answer-btn" class="btn-primary">こたえを みる</button>
+
+            <div id="judge-btns" class="judge-container hidden">
+                <button id="btn-wrong" class="btn-danger">できなかった ❌</button>
+                <button id="btn-right" class="btn-success">できた ⭕</button>
+            </div>
+
+            <button id="next-btn" class="btn-primary hidden">つぎへ ➔</button>
+        </div>
+
+        <button onclick="backToSetup()" class="btn-secondary" style="margin-top: 20px; padding: 10px; font-size: 0.9rem;">やめる</button>
+        <div class="shortcut-tip">PCでの そうさ: [Space] こたえをみる / つぎへ | [J] できた ⭕ | [K] できなかった ❌</div>
+    </div>
+
+    <div id="result-screen" class="hidden">
+        <div class="card">
+            <h2 style="color: var(--accent); margin-top: 0; font-family: sans-serif;">おわりました！🎉</h2>
+            <p style="font-size: 1.4rem; margin: 20px 0; font-family: sans-serif;">あなたの てんすう: <span id="result-score" style="font-weight: bold; color: #fff; font-size: 2rem;">0</span></p>
+            <p id="result-comment" style="color: #aaa;"></p>
+        </div>
+
+        <div id="retry-wrong-container" class="form-group hidden" style="border-color: var(--incorrect);">
+            <label style="color: #ff8a80;">🔁 苦手（にがて）なところを クリアしましょう！</label>
+            <button onclick="startRetryWrongMode()" class="btn-danger" style="margin-bottom:0;">まちがえた 問題を もういちど やる</button>
+        </div>
+
+        <div id="wrong-list-container" class="form-group hidden">
+            <label>📝 まちがえた 問題の リスト</label>
+            <textarea id="wrong-list-area" readonly></textarea>
+            <button id="copy-wrong-btn" class="btn-primary" style="padding: 10px; font-size: 1rem;">まちがえた 問題を コピーする</button>
+        </div>
+
+        <button onclick="backToSetup()" class="btn-success">もういちど 最初（さいしょ）から やる</button>
+    </div>
+
+    <audio id="audio-correct" src="se/correct.mp3" preload="auto"></audio>
+    <audio id="audio-incorrect" src="se/incorrect.mp3" preload="auto"></audio>
+    <audio id="audio-perfect" src="se/perfect.mp3" preload="auto"></audio>
+    <audio id="audio-good" src="se/good.mp3" preload="auto"></audio>
+    <audio id="audio-cheer" src="se/cheer.mp3" preload="auto"></audio>
+
+    <script>
+        let allData = [];
+        let activePool = [];
+        let currentQuestion = null;
+        let targetForms = [];
+        let maxQuestions = 10;
+        let currentIdx = 0;
+
+        let correctCount = 0;
+        let comboCount = 0;
+        
+        let wrongObjectsPool = []; 
+        let wrongListText = [];
+
+        // 【新機能】アプリ起動時に自動でExcelファイルを読み込む処理
+        window.addEventListener('DOMContentLoaded', () => {
+            // HTMLと同じフォルダに置いた "verbs.xlsx" を自動ダウンロードして読み込む
+            const targetExcelFile = 'verbs.xlsx'; 
+
+            fetch(targetExcelFile)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("ファイルが見つかりません。サーバーの設定を確認してください。");
+                    }
+                    return response.arrayBuffer();
+                })
+                .then(buffer => {
+                    const data = new Uint8Array(buffer);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    allData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    if(allData.length > 0) {
+                        analyzeColumns(allData[0]);
+                        showFileStatus(true, "準備（じゅんび）が できました！");
+                    } else {
+                        showFileStatus(false, "データが 空っぽです");
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    showFileStatus(false, "データの よみこみに 失敗しました。");
+                });
+        });
+
+        function showFileStatus(success, message = "") {
+            const statusText = document.getElementById('file-status-text');
+            const startBtn = document.getElementById('start-btn');
+            if (success) {
+                statusText.innerText = "✓ " + message;
+                statusText.style.color = "#deff9a";
+                startBtn.disabled = false;
+                startBtn.style.opacity = "1";
+            } else {
+                statusText.innerText = "✕ " + message;
+                statusText.style.color = "#c62828";
+                startBtn.disabled = true;
+                startBtn.style.opacity = "0.5";
+            }
+        }
+
+        function buildRuby(kanjiStr, kanaStr) {
+            if (!kanjiStr) return "";
+            kanjiStr = String(kanjiStr).trim();
+            kanaStr = String(kanaStr || "").trim();
+            if (!kanaStr || kanjiStr === kanaStr) return kanjiStr;
+
+            let html = "";
+            let i = 0, j = 0;
+            const isKanaRegex = /[ぁ-んァ-ヴー〜]/;
+
+            while (i < kanjiStr.length) {
+                const char = kanjiStr[i];
+                if (isKanaRegex.test(char)) {
+                    html += char;
+                    i++;
+                    j++;
+                } else {
+                    let kanjiBuf = "";
+                    while (i < kanjiStr.length) {
+                        const c = kanjiStr[i];
+                        if (isKanaRegex.test(c)) break;
+                        kanjiBuf += c;
+                        i++;
+                    }
+                    const nextMarker = kanjiStr[i] || "";
+                    let kanaBuf = "";
+                    
+                    if (nextMarker === "") {
+                        kanaBuf = kanaStr.substring(j);
+                        j = kanaStr.length;
+                    } else {
+                        const targetIdx = kanaStr.indexOf(nextMarker, j);
+                        if (targetIdx !== -1) {
+                            kanaBuf = kanaStr.substring(j, targetIdx);
+                            j = targetIdx;
+                        } else {
+                            kanaBuf = kanaStr.substring(j);
+                            j = kanaStr.length;
+                        }
+                    }
+                    html += `<ruby>${kanjiBuf}<rt>${kanaBuf}</rt></ruby>`;
+                }
+            }
+            return html;
+        }
+
+        function analyzeColumns(firstRow) {
+            const container = document.getElementById('form-checkboxes');
+            container.innerHTML = "";
+            targetForms = [];
+
+            const keys = Object.keys(firstRow);
+            keys.forEach(key => {
+                if (key.endsWith('_漢字') && key !== 'ます形_漢字' && key !== '語幹_漢字' && key !== '辞書形_漢字') {
+                    const formName = key.replace('_漢字', '');
+                    targetForms.push(formName);
+
+                    const label = document.createElement('label');
+                    label.innerHTML = `<input type="checkbox" name="target-form-cb" value="${formName}" checked> ${formName}`;
+                    container.appendChild(label);
+                }
+            });
+            if (keys.includes('辞書形_漢字')) {
+                targetForms.unshift('辞書形');
+                const label = document.createElement('label');
+                label.innerHTML = `<input type="checkbox" name="target-form-cb" value="辞書形" checked> 辞書形`;
+                container.insertBefore(label, container.firstChild);
+            }
+        }
+
+        document.getElementById('start-btn').addEventListener('click', buildDrillPool);
+
+        function buildDrillPool() {
+            const startLsn = parseInt(document.getElementById('filter-lesson-start').value) || 1;
+            const endLsn = parseInt(document.getElementById('filter-lesson-end').value) || 50;
+            
+            const g1 = document.getElementById('group-1').checked;
+            const g2 = document.getElementById('group-2').checked;
+            const g3 = document.getElementById('group-3').checked;
+
+            const selectedCbs = document.querySelectorAll('input[name="target-form-cb"]:checked');
+            const selectedForms = Array.from(selectedCbs).map(cb => cb.value);
+
+            if (selectedForms.length === 0) {
+                alert("どれか1つ 活用形（けい）を えらんでください。");
+                return;
+            }
+
+            let filteredVerbs = allData.filter(row => {
+                const lsn = parseInt(row['導入課']);
+                if (lsn < startLsn || lsn > endLsn) return false;
+
+                const grp = String(row['グループ']);
+                if (grp === '1' && !g1) return false;
+                if (grp === '2' && !g2) return false;
+                if (grp === '3' && !g3) return false;
+
+                return true;
+            });
+
+            if (filteredVerbs.length === 0) {
+                alert("えらんだ 条件（じょうけん）に あう 動詞が ありません。");
+                return;
+            }
+
+            activePool = [];
+            filteredVerbs.forEach(verb => {
+                selectedForms.forEach(form => {
+                    if (verb[`${form}_漢字`] && verb[`${form}_ひらがな`]) {
+                        activePool.push({
+                            verbData: verb,
+                            formName: form
+                        });
+                    }
+                });
+            });
+
+            if (activePool.length === 0) {
+                alert("えらんだ 活用形の データが エクセルに ありません。");
+                return;
+            }
+
+            activePool.sort(() => Math.random() - 0.5);
+
+            const countSelect = document.getElementById('question-count-select').value;
+            maxQuestions = Math.min(parseInt(countSelect), activePool.length);
+
+            initDrillSession();
+        }
+
+        function initDrillSession() {
+            currentIdx = 0;
+            correctCount = 0;
+            comboCount = 0;
+            wrongObjectsPool = [];
+            wrongListText = [];
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('drill-screen').classList.remove('hidden');
+
+            updateScoreBoard();
+            nextQuestion();
+        }
+
+        function startRetryWrongMode() {
+            activePool = [...wrongObjectsPool];
+            activePool.sort(() => Math.random() - 0.5); 
+            maxQuestions = activePool.length;
+
+            initDrillSession();
+        }
+
+        function nextQuestion() {
+            if (currentIdx >= maxQuestions) {
+                showFinalResult();
+                return;
+            }
+
+            currentIdx++;
+            currentQuestion = activePool[currentIdx - 1];
+
+            document.getElementById('instruction-content').innerText = `【 ${currentQuestion.formName} 】 に してください`;
+            
+            const qKanji = currentQuestion.verbData['ます形_漢字'] || "";
+            const qKana = currentQuestion.verbData['ます形_ひらがな'] || "";
+            document.getElementById('display-word-area').innerHTML = buildRuby(qKanji, qKana);
+
+            document.getElementById('display-answer-block').classList.add('hidden');
+            const aKanji = currentQuestion.verbData[`${currentQuestion.formName}_漢字`] || "";
+            const aKana = currentQuestion.verbData[`${currentQuestion.formName}_ひらがな`] || "";
+            document.getElementById('display-answer-word').innerHTML = buildRuby(aKanji, aKana);
+
+            document.getElementById('show-answer-btn').classList.remove('hidden');
+            document.getElementById('judge-btns').classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+
+            updateScoreBoard();
+        }
+
+        function showAnswer() {
+            document.getElementById('display-answer-block').classList.remove('hidden');
+            document.getElementById('show-answer-btn').classList.add('hidden');
+            document.getElementById('judge-btns').classList.remove('hidden');
+        }
+
+        function handleJudge(isCorrect) {
+            document.getElementById('judge-btns').classList.add('hidden');
+            document.getElementById('next-btn').classList.remove('hidden');
+
+            if (isCorrect) {
+                correctCount++;
+                comboCount++;
+                document.getElementById('audio-correct').play().catch(()=>{});
+            } else {
+                comboCount = 0;
+                document.getElementById('audio-incorrect').play().catch(()=>{});
+                
+                wrongObjectsPool.push(currentQuestion);
+
+                const vData = currentQuestion.verbData;
+                const txt = `・[${vData['導入課']}課] ${vData['ます形_漢字']} (${currentQuestion.formName}) ➔ 正解: ${vData[currentQuestion.formName+'_漢字']}(${vData[currentQuestion.formName+'_ひらがな']})`;
+                wrongListText.push(txt);
+            }
+            updateScoreBoard();
+        }
+
+        function updateScoreBoard() {
+            document.getElementById('score-current-idx').innerText = currentIdx;
+            document.getElementById('score-max-questions').innerText = maxQuestions;
+            document.getElementById('score-correct').innerText = correctCount;
+            document.getElementById('score-combo').innerText = comboCount;
+        }
+
+        function showFinalResult() {
+            document.getElementById('drill-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            const rate = Math.round((correctCount / maxQuestions) * 100);
+            document.getElementById('result-score').innerText = `${correctCount} / ${maxQuestions} (${rate}%)`;
+
+            let comment = "つぎも がんばりましょう！";
+            if (rate === 100) {
+                comment = "素晴らしい！パーフェクトです！🎉";
+                document.getElementById('audio-perfect').play().catch(()=>{});
+            } else if (rate >= 80) {
+                comment = "お見事！よくできました！✨";
+                document.getElementById('audio-good').play().catch(()=>{});
+            } else {
+                document.getElementById('audio-cheer').play().catch(()=>{});
+            }
+            document.getElementById('result-comment').innerText = comment;
+
+            const retryContainer = document.getElementById('retry-wrong-container');
+            const wrongContainer = document.getElementById('wrong-list-container');
+            const wrongTextArea = document.getElementById('wrong-list-area');
+
+            if (wrongObjectsPool.length > 0) {
+                retryContainer.classList.remove('hidden');
+                wrongContainer.classList.remove('hidden');
+                wrongTextArea.value = wrongListText.join('\n');
+            } else {
+                retryContainer.classList.add('hidden');
+                wrongContainer.classList.add('hidden');
+                wrongTextArea.value = "";
+            }
+        }
+
+        document.getElementById('copy-wrong-btn').addEventListener('click', function() {
+            const wrongTextArea = document.getElementById('wrong-list-area');
+            wrongTextArea.select();
+            document.execCommand('copy');
+            alert("クリップボードに コピーしました！メモ帳などに 貼り付けて使ってください。");
+        });
+
+        function backToSetup() {
+            document.getElementById('drill-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+        }
+
+        document.getElementById('show-answer-btn').addEventListener('click', showAnswer);
+        document.getElementById('btn-right').addEventListener('click', () => handleJudge(true));
+        document.getElementById('btn-wrong').addEventListener('click', () => handleJudge(false));
+        document.getElementById('next-btn').addEventListener('click', nextQuestion);
+
+        window.addEventListener('keydown', (e) => {
+            if (document.getElementById('drill-screen').classList.contains('hidden')) return;
+
+            if (!document.getElementById('show-answer-btn').classList.contains('hidden')) {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    showAnswer();
+                    e.preventDefault();
+                }
+            } 
+            else if (!document.getElementById('judge-btns').classList.contains('hidden')) {
+                if (e.key === 'j' || e.key === 'J') {
+                    handleJudge(true);
+                    e.preventDefault();
+                }
+                if (e.key === 'k' || e.key === 'K') {
+                    handleJudge(false);
+                    e.preventDefault();
+                }
+            } 
+            else if (!document.getElementById('next-btn').classList.contains('hidden')) {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    nextQuestion();
+                    e.preventDefault();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
