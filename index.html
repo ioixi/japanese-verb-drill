@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>動詞活用ドリル (学生用)</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -40,35 +45,39 @@
         }
         .hidden { display: none !important; }
         
-        /* スコア＆消音ボタンのエリア */
+        /* 【レイアウト崩れ防止】スコアと音ボタンを完全に横並びに固定 */
         .score-board {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: rgba(255,255,255,0.05);
-            padding: 8px 12px;
+            padding: 10px 12px;
             border-radius: 8px;
             margin-bottom: 15px;
+            gap: 10px;
         }
         .score-info {
             display: flex;
-            gap: 12px;
-            font-size: 0.95rem;
+            gap: 10px;
+            font-size: 0.85rem;
+            flex-wrap: nowrap; /* 絶対に改行させない */
+            white-space: nowrap;
         }
         .score-item { color: var(--text-main); }
         .score-num { font-weight: bold; color: var(--accent); }
 
-        /* 【新機能】ミュートボタンのスタイル */
         .mute-btn {
             background: #2a2a32;
             color: var(--text-main);
             border: 1px solid #444;
             border-radius: 6px;
-            padding: 6px 12px;
-            font-size: 0.85rem;
+            padding: 6px 10px;
+            font-size: 0.8rem;
             width: auto;
             margin-bottom: 0;
             cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0; /* ボタンが潰れるのを防ぐ */
         }
         .mute-btn.is-muted {
             background: var(--incorrect);
@@ -156,7 +165,7 @@
         }
         
         #display-answer-block { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #444; width: 100%; }
-        #display-answer-word { font-size: 2.6rem; font-weight: bold; color: #ffeb3b; line-height: 1.5; letter-spacing: 0.02em; word-break: break-all; }
+        #display-answer-word { font-size: 2.6rem; font-weight: bold; color: #ffeb3b; line-height: 1.6; letter-spacing: 0.02em; word-break: break-all; }
         #display-answer-word rt { font-size: 1.0rem; font-weight: bold; letter-spacing: 0.02em; padding-bottom: 4px; }
 
         .file-status { font-size: 0.9rem; color: #888; margin-top: 5px; text-align: center; font-family: sans-serif; font-weight: bold; }
@@ -217,11 +226,11 @@
     <div id="drill-screen" class="hidden">
         <div class="score-board">
             <div class="score-info">
-                <div class="score-item">問題: <span id="score-current-idx" class="score-num">0</span> / <span id="score-max-questions" class="score-num">0</span></div>
-                <div class="score-item">できた: <span id="score-correct" class="score-num">0</span></div>
-                <div class="score-item">連勝: <span id="score-combo" class="score-num">0</span></div>
+                <div class="score-item">問題:<span id="score-current-idx" class="score-num">0</span>/<span id="score-max-questions" class="score-num">0</span></div>
+                <div class="score-item">できた:<span id="score-correct" class="score-num">0</span></div>
+                <div class="score-item">連勝:<span id="score-combo" class="score-num">0</span></div>
             </div>
-            <button id="mute-btn-drill" class="mute-btn" onclick="toggleMute()">🔊 おと：ON</button>
+            <button id="mute-btn-drill" class="mute-btn" onclick="toggleMute()">🔊 音:ON</button>
         </div>
 
         <div class="card">
@@ -258,7 +267,7 @@
 
     <div id="result-screen" class="hidden">
         <div style="text-align: right; margin-bottom: 10px;">
-            <button id="mute-btn-result" class="mute-btn" onclick="toggleMute()">🔊 おと：ON</button>
+            <button id="mute-btn-result" class="mute-btn" onclick="toggleMute()">🔊 おと:ON</button>
         </div>
         
         <div class="card">
@@ -301,34 +310,31 @@
         let wrongObjectsPool = []; 
         let wrongListText = [];
         
-        // 消音（ミュート）状態を管理する変数
         let isMuted = false;
 
-        // 音声を再生する共通関数（消音チェック付き）
         function playSound(audioId) {
-            if (isMuted) return; // ミュートなら鳴らさない
+            if (isMuted) return;
             const audio = document.getElementById(audioId);
             if (audio) {
-                audio.currentTime = 0; // 連続タップ対策
+                audio.currentTime = 0;
                 audio.play().catch(()=>{});
             }
         }
 
-        // ミュートのON/OFF切り替え
         function toggleMute() {
             isMuted = !isMuted;
             const btnDrill = document.getElementById('mute-btn-drill');
             const btnResult = document.getElementById('mute-btn-result');
             
             if (isMuted) {
-                btnDrill.innerText = "🔈 おと：OFF";
+                btnDrill.innerText = "🔈 おと:OFF";
                 btnDrill.classList.add('is-muted');
-                btnResult.innerText = "🔈 おと：OFF";
+                btnResult.innerText = "🔈 おと:OFF";
                 btnResult.classList.add('is-muted');
             } else {
-                btnDrill.innerText = "🔊 おと：ON";
+                btnDrill.innerText = "🔊 おと:ON";
                 btnDrill.classList.remove('is-muted');
-                btnResult.innerText = "🔊 おと：ON";
+                btnResult.innerText = "🔊 おと:ON";
                 btnResult.classList.remove('is-muted');
             }
         }
@@ -452,7 +458,6 @@
 
         document.getElementById('start-btn').addEventListener('click', buildDrillPool);
 
-        // 【バグ修正】通常の出題プール作成：毎回条件をフレッシュに適用する
         function buildDrillPool() {
             const startLsn = parseInt(document.getElementById('filter-lesson-start').value) || 1;
             const endLsn = parseInt(document.getElementById('filter-lesson-end').value) || 50;
@@ -486,7 +491,6 @@
                 return;
             }
 
-            // activePoolの完全初期化
             activePool = [];
             filteredVerbs.forEach(verb => {
                 selectedForms.forEach(form => {
@@ -547,8 +551,9 @@
             document.getElementById('instruction-content').innerText = `【 ${currentQuestion.formName} 】 に してください`;
             
             const qKanji = currentQuestion.verbData['ます形_漢字'] || "";
-            const qKana = currentQuestion.verbData['ます形_ひらがな'] || "";
-            document.getElementById('display-word-area').innerHTML = buildRuby(qKanji, qKana);
+            const qKana = currentQuestion.verbData['ます形_ひラグナ'] || ""; // ※ミス修正（ひらがな）
+            const finalQKana = qKana === "" ? (currentQuestion.verbData['ます形_ひらがな'] || "") : qKana;
+            document.getElementById('display-word-area').innerHTML = buildRuby(qKanji, finalQKana);
 
             document.getElementById('display-answer-block').classList.add('hidden');
             const aKanji = currentQuestion.verbData[`${currentQuestion.formName}_漢字`] || "";
@@ -575,10 +580,10 @@
             if (isCorrect) {
                 correctCount++;
                 comboCount++;
-                playSound('audio-correct'); // 共通関数経由に変更
+                playSound('audio-correct');
             } else {
                 comboCount = 0;
-                playSound('audio-incorrect'); // 共通関数経由に変更
+                playSound('audio-incorrect');
                 
                 wrongObjectsPool.push(currentQuestion);
 
