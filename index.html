@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>動詞活用ドリル (学生用)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -24,11 +25,12 @@
             align-items: center; 
             min-height: 100vh; 
             margin: 0; 
-            padding: 20px;
+            padding: 15px; /* スマホ用に少し狭く */
             box-sizing: border-box;
             -webkit-font-smoothing: antialiased;
         }
-        #setup-screen, #drill-screen, #result-screen { width: 95%; max-width: 600px; margin-top: 20px; text-align: center; position: relative; }
+        /* 横幅をスマホの画面幅（100%）にフィットさせる */
+        #setup-screen, #drill-screen, #result-screen { width: 100%; max-width: 500px; margin-top: 10px; text-align: center; position: relative; }
         .hidden { display: none !important; }
         
         .score-board {
@@ -46,10 +48,10 @@
         .card {
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 40px 20px;
-            margin-bottom: 25px;
+            padding: 30px 15px; /* スマホ用に調整 */
+            margin-bottom: 20px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-            min-height: 240px;
+            min-height: 200px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -57,7 +59,7 @@
         }
         .form-group {
             background: var(--card-bg);
-            padding: 20px;
+            padding: 15px;
             border-radius: 12px;
             margin-bottom: 15px;
             text-align: left;
@@ -68,14 +70,15 @@
             color: #fff; border-radius: 8px; font-size: 1rem; box-sizing: border-box;
             font-family: sans-serif;
         }
-        .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 5px; }
-        .checkbox-group label { display: flex; align-items: center; gap: 8px; color: #fff; cursor: pointer; font-size: 1rem; }
+        .checkbox-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
+        .checkbox-group label { display: flex; align-items: center; gap: 6px; color: #fff; cursor: pointer; font-size: 1rem; }
         
         button {
-            width: 100%; padding: 15px; border: none; border-radius: 12px; 
-            font-size: 1.1rem; font-weight: bold; cursor: pointer; 
-            transition: transform 0.1s, opacity 0.2s; margin-bottom: 10px;
+            width: 100%; padding: 16px; border: none; border-radius: 12px; 
+            font-size: 1.15rem; font-weight: bold; cursor: pointer; 
+            transition: transform 0.1s, opacity 0.2s; margin-bottom: 12px;
             font-family: sans-serif;
+            -webkit-tap-highlight-color: transparent; /* スマホのタップ時青枠消し */
         }
         button:active { transform: scale(0.98); }
         .btn-primary { background: var(--primary); color: white; }
@@ -83,33 +86,35 @@
         .btn-danger { background: var(--incorrect); color: white; }
         .btn-secondary { background: #444; color: #ccc; }
 
-        .judge-container { display: flex; gap: 15px; width: 100%; }
+        .judge-container { display: flex; gap: 12px; width: 100%; }
         
-        #display-target-form { font-size: 1.4rem; font-weight: bold; margin-bottom: 25px; font-family: sans-serif; }
+        #display-target-form { font-size: 1.25rem; font-weight: bold; margin-bottom: 15px; font-family: sans-serif; }
         .arrow-accent { color: var(--accent); }
         .instruction-text { color: var(--text-sub); }
 
+        /* スマホ画面でもはみ出さず、かつ大きく見えるフォントサイズに最適化 */
         #display-word-area { 
-            font-size: 3.2rem; 
+            font-size: 2.6rem; 
             font-weight: bold; 
             color: var(--accent); 
             margin: 10px 0;
-            line-height: 1.6;
-            letter-spacing: 0.05em;
+            line-height: 1.5;
+            letter-spacing: 0.02em;
+            word-break: break-all;
         }
         #display-word-area rt {
-            font-size: 1.25rem;
+            font-size: 1.05rem;
             font-weight: bold;
-            letter-spacing: 0.05em;
-            padding-bottom: 6px;
+            letter-spacing: 0.02em;
+            padding-bottom: 4px;
         }
         
-        #display-answer-block { margin-top: 20px; padding-top: 20px; border-top: 1px dashed #444; width: 100%; }
-        #display-answer-word { font-size: 3.4rem; font-weight: bold; color: #ffeb3b; line-height: 1.6; letter-spacing: 0.05em; }
-        #display-answer-word rt { font-size: 1.3rem; font-weight: bold; letter-spacing: 0.05em; padding-bottom: 6px; }
+        #display-answer-block { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #444; width: 100%; }
+        #display-answer-word { font-size: 2.8rem; font-weight: bold; color: #ffeb3b; line-height: 1.5; letter-spacing: 0.02em; word-break: break-all; }
+        #display-answer-word rt { font-size: 1.1rem; font-weight: bold; letter-spacing: 0.02em; padding-bottom: 4px; }
 
         .file-status { font-size: 0.9rem; color: #888; margin-top: 5px; text-align: center; font-family: sans-serif; font-weight: bold; }
-        .shortcut-tip { font-size: 0.8rem; color: #555; margin-top: 15px; text-align: center; font-family: sans-serif; }
+        .shortcut-tip { display: none; } /* スマホではPC用ショートカット案内を非表示に */
         
         #wrong-list-area { width: 100%; height: 120px; background: #2a2a32; color: #fff; border: 1px solid #444; border-radius: 8px; padding: 10px; box-sizing: border-box; font-size: 0.9rem; margin-bottom: 10px; text-align: left; font-family: sans-serif; }
     </style>
@@ -193,8 +198,7 @@
             <button id="next-btn" class="btn-primary hidden">つぎへ ➔</button>
         </div>
 
-        <button onclick="backToSetup()" class="btn-secondary" style="margin-top: 20px; padding: 10px; font-size: 0.9rem;">やめる</button>
-        <div class="shortcut-tip">PCでの そうさ: [Space] こたえをみる / つぎへ | [J] できた ⭕ | [K] できなかった ❌</div>
+        <button onclick="backToSetup()" class="btn-secondary" style="margin-top: 10px; padding: 10px; font-size: 0.9rem;">やめる</button>
     </div>
 
     <div id="result-screen" class="hidden">
@@ -238,15 +242,13 @@
         let wrongObjectsPool = []; 
         let wrongListText = [];
 
-        // 【新機能】アプリ起動時に自動でExcelファイルを読み込む処理
         window.addEventListener('DOMContentLoaded', () => {
-            // HTMLと同じフォルダに置いた "verbs.xlsx" を自動ダウンロードして読み込む
             const targetExcelFile = 'verbs.xlsx'; 
 
             fetch(targetExcelFile)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error("ファイルが見つかりません。サーバーの設定を確認してください。");
+                        throw new Error("ファイルが見つかりません。");
                     }
                     return response.arrayBuffer();
                 })
@@ -539,7 +541,7 @@
             const wrongTextArea = document.getElementById('wrong-list-area');
             wrongTextArea.select();
             document.execCommand('copy');
-            alert("クリップボードに コピーしました！メモ帳などに 貼り付けて使ってください。");
+            alert("クリップボードに コピーしました！");
         });
 
         function backToSetup() {
