@@ -25,12 +25,20 @@
             align-items: center; 
             min-height: 100vh; 
             margin: 0; 
-            padding: 15px; /* スマホ用に少し狭く */
+            padding: 15px;
             box-sizing: border-box;
             -webkit-font-smoothing: antialiased;
         }
-        /* 横幅をスマホの画面幅（100%）にフィットさせる */
-        #setup-screen, #drill-screen, #result-screen { width: 100%; max-width: 500px; margin-top: 10px; text-align: center; position: relative; }
+        
+        /* 【レスポンシブ対応】PCでは最大600pxで中央配置、スマホでは100%に広がる */
+        #setup-screen, #drill-screen, #result-screen { 
+            width: 100%; 
+            max-width: 600px; 
+            margin-top: 10px; 
+            text-align: center; 
+            position: relative; 
+            box-sizing: border-box;
+        }
         .hidden { display: none !important; }
         
         .score-board {
@@ -48,7 +56,7 @@
         .card {
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 30px 15px; /* スマホ用に調整 */
+            padding: 30px 15px;
             margin-bottom: 20px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.3);
             min-height: 200px;
@@ -78,7 +86,8 @@
             font-size: 1.15rem; font-weight: bold; cursor: pointer; 
             transition: transform 0.1s, opacity 0.2s; margin-bottom: 12px;
             font-family: sans-serif;
-            -webkit-tap-highlight-color: transparent; /* スマホのタップ時青枠消し */
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
         button:active { transform: scale(0.98); }
         .btn-primary { background: var(--primary); color: white; }
@@ -86,15 +95,33 @@
         .btn-danger { background: var(--incorrect); color: white; }
         .btn-secondary { background: #444; color: #ccc; }
 
-        .judge-container { display: flex; gap: 12px; width: 100%; }
+        /* 【判定ボタンのレイアウト崩れ対策】高さを揃えるためのコンテナ */
+        .judge-container { 
+            display: flex; 
+            gap: 12px; 
+            width: 100%; 
+            box-sizing: border-box;
+        }
+        
+        /* できた・できなかったボタン内のテキスト用スタイル */
+        .btn-label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: normal;
+            margin-bottom: 4px;
+        }
+        .btn-mark {
+            display: block;
+            font-size: 1.4rem;
+        }
         
         #display-target-form { font-size: 1.25rem; font-weight: bold; margin-bottom: 15px; font-family: sans-serif; }
         .arrow-accent { color: var(--accent); }
         .instruction-text { color: var(--text-sub); }
 
-        /* スマホ画面でもはみ出さず、かつ大きく見えるフォントサイズに最適化 */
+        /* 長い動詞でも改行されにくいよう、スマホでのフォントサイズを微調整 */
         #display-word-area { 
-            font-size: 2.6rem; 
+            font-size: 2.4rem; 
             font-weight: bold; 
             color: var(--accent); 
             margin: 10px 0;
@@ -103,18 +130,18 @@
             word-break: break-all;
         }
         #display-word-area rt {
-            font-size: 1.05rem;
+            font-size: 1.0rem;
             font-weight: bold;
             letter-spacing: 0.02em;
             padding-bottom: 4px;
         }
         
         #display-answer-block { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #444; width: 100%; }
-        #display-answer-word { font-size: 2.8rem; font-weight: bold; color: #ffeb3b; line-height: 1.5; letter-spacing: 0.02em; word-break: break-all; }
-        #display-answer-word rt { font-size: 1.1rem; font-weight: bold; letter-spacing: 0.02em; padding-bottom: 4px; }
+        #display-answer-word { font-size: 2.6rem; font-weight: bold; color: #ffeb3b; line-height: 1.5; letter-spacing: 0.02em; word-break: break-all; }
+        #display-answer-word rt { font-size: 1.0rem; font-weight: bold; letter-spacing: 0.02em; padding-bottom: 4px; }
 
         .file-status { font-size: 0.9rem; color: #888; margin-top: 5px; text-align: center; font-family: sans-serif; font-weight: bold; }
-        .shortcut-tip { display: none; } /* スマホではPC用ショートカット案内を非表示に */
+        .shortcut-tip { display: none; }
         
         #wrong-list-area { width: 100%; height: 120px; background: #2a2a32; color: #fff; border: 1px solid #444; border-radius: 8px; padding: 10px; box-sizing: border-box; font-size: 0.9rem; margin-bottom: 10px; text-align: left; font-family: sans-serif; }
     </style>
@@ -191,8 +218,14 @@
             <button id="show-answer-btn" class="btn-primary">こたえを みる</button>
 
             <div id="judge-btns" class="judge-container hidden">
-                <button id="btn-wrong" class="btn-danger">できなかった ❌</button>
-                <button id="btn-right" class="btn-success">できた ⭕</button>
+                <button id="btn-wrong" class="btn-danger">
+                    <span class="btn-label">できなかった</span>
+                    <span class="btn-mark">❌</span>
+                </button>
+                <button id="btn-right" class="btn-success">
+                    <span class="btn-label">できた</span>
+                    <span class="btn-mark">⭕</span>
+                </button>
             </div>
 
             <button id="next-btn" class="btn-primary hidden">つぎへ ➔</button>
@@ -210,7 +243,7 @@
 
         <div id="retry-wrong-container" class="form-group hidden" style="border-color: var(--incorrect);">
             <label style="color: #ff8a80;">🔁 苦手（にがて）なところを クリアしましょう！</label>
-            <button onclick="startRetryWrongMode()" class="btn-danger" style="margin-bottom:0;">まちがえた 問題を もういちど やる</button>
+            <button onclick="startRetryWrongMode()" class="btn-danger" style="margin-bottom:0;">まちがえた 問題を もう一度 やる</button>
         </div>
 
         <div id="wrong-list-container" class="form-group hidden">
@@ -219,7 +252,7 @@
             <button id="copy-wrong-btn" class="btn-primary" style="padding: 10px; font-size: 1rem;">まちがえた 問題を コピーする</button>
         </div>
 
-        <button onclick="backToSetup()" class="btn-success">もういちど 最初（さいしょ）から やる</button>
+        <button onclick="backToSetup()" class="btn-success">もう一度 最初（さいしょ）から やる</button>
     </div>
 
     <audio id="audio-correct" src="se/correct.mp3" preload="auto"></audio>
