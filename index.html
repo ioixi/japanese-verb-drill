@@ -30,7 +30,6 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        /* 【レスポンシブ対応】PCでは最大600pxで中央配置、スマホでは100%に広がる */
         #setup-screen, #drill-screen, #result-screen { 
             width: 100%; 
             max-width: 600px; 
@@ -41,17 +40,41 @@
         }
         .hidden { display: none !important; }
         
+        /* スコア＆消音ボタンのエリア */
         .score-board {
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
+            align-items: center;
             background: rgba(255,255,255,0.05);
-            padding: 10px;
+            padding: 8px 12px;
             border-radius: 8px;
             margin-bottom: 15px;
+        }
+        .score-info {
+            display: flex;
+            gap: 12px;
             font-size: 0.95rem;
         }
-        .score-item { margin: 0 5px; color: var(--text-main); }
+        .score-item { color: var(--text-main); }
         .score-num { font-weight: bold; color: var(--accent); }
+
+        /* 【新機能】ミュートボタンのスタイル */
+        .mute-btn {
+            background: #2a2a32;
+            color: var(--text-main);
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            width: auto;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        .mute-btn.is-muted {
+            background: var(--incorrect);
+            border-color: var(--incorrect);
+            color: #fff;
+        }
 
         .card {
             background: var(--card-bg);
@@ -95,15 +118,12 @@
         .btn-danger { background: var(--incorrect); color: white; }
         .btn-secondary { background: #444; color: #ccc; }
 
-        /* 【判定ボタンのレイアウト崩れ対策】高さを揃えるためのコンテナ */
         .judge-container { 
             display: flex; 
             gap: 12px; 
             width: 100%; 
             box-sizing: border-box;
         }
-        
-        /* できた・できなかったボタン内のテキスト用スタイル */
         .btn-label {
             display: block;
             font-size: 0.95rem;
@@ -119,7 +139,6 @@
         .arrow-accent { color: var(--accent); }
         .instruction-text { color: var(--text-sub); }
 
-        /* 長い動詞でも改行されにくいよう、スマホでのフォントサイズを微調整 */
         #display-word-area { 
             font-size: 2.4rem; 
             font-weight: bold; 
@@ -197,9 +216,12 @@
 
     <div id="drill-screen" class="hidden">
         <div class="score-board">
-            <div class="score-item">問題: <span id="score-current-idx" class="score-num">0</span> / <span id="score-max-questions" class="score-num">0</span></div>
-            <div class="score-item">できた: <span id="score-correct" class="score-num">0</span></div>
-            <div class="score-item">連勝: <span id="score-combo" class="score-num">0</span></div>
+            <div class="score-info">
+                <div class="score-item">問題: <span id="score-current-idx" class="score-num">0</span> / <span id="score-max-questions" class="score-num">0</span></div>
+                <div class="score-item">できた: <span id="score-correct" class="score-num">0</span></div>
+                <div class="score-item">連勝: <span id="score-combo" class="score-num">0</span></div>
+            </div>
+            <button id="mute-btn-drill" class="mute-btn" onclick="toggleMute()">🔊 おと：ON</button>
         </div>
 
         <div class="card">
@@ -235,6 +257,10 @@
     </div>
 
     <div id="result-screen" class="hidden">
+        <div style="text-align: right; margin-bottom: 10px;">
+            <button id="mute-btn-result" class="mute-btn" onclick="toggleMute()">🔊 おと：ON</button>
+        </div>
+        
         <div class="card">
             <h2 style="color: var(--accent); margin-top: 0; font-family: sans-serif;">おわりました！🎉</h2>
             <p style="font-size: 1.4rem; margin: 20px 0; font-family: sans-serif;">あなたの てんすう: <span id="result-score" style="font-weight: bold; color: #fff; font-size: 2rem;">0</span></p>
@@ -274,6 +300,38 @@
         
         let wrongObjectsPool = []; 
         let wrongListText = [];
+        
+        // 消音（ミュート）状態を管理する変数
+        let isMuted = false;
+
+        // 音声を再生する共通関数（消音チェック付き）
+        function playSound(audioId) {
+            if (isMuted) return; // ミュートなら鳴らさない
+            const audio = document.getElementById(audioId);
+            if (audio) {
+                audio.currentTime = 0; // 連続タップ対策
+                audio.play().catch(()=>{});
+            }
+        }
+
+        // ミュートのON/OFF切り替え
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btnDrill = document.getElementById('mute-btn-drill');
+            const btnResult = document.getElementById('mute-btn-result');
+            
+            if (isMuted) {
+                btnDrill.innerText = "🔈 おと：OFF";
+                btnDrill.classList.add('is-muted');
+                btnResult.innerText = "🔈 おと：OFF";
+                btnResult.classList.add('is-muted');
+            } else {
+                btnDrill.innerText = "🔊 おと：ON";
+                btnDrill.classList.remove('is-muted');
+                btnResult.innerText = "🔊 おと：ON";
+                btnResult.classList.remove('is-muted');
+            }
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             const targetExcelFile = 'verbs.xlsx'; 
@@ -394,6 +452,7 @@
 
         document.getElementById('start-btn').addEventListener('click', buildDrillPool);
 
+        // 【バグ修正】通常の出題プール作成：毎回条件をフレッシュに適用する
         function buildDrillPool() {
             const startLsn = parseInt(document.getElementById('filter-lesson-start').value) || 1;
             const endLsn = parseInt(document.getElementById('filter-lesson-end').value) || 50;
@@ -427,6 +486,7 @@
                 return;
             }
 
+            // activePoolの完全初期化
             activePool = [];
             filteredVerbs.forEach(verb => {
                 selectedForms.forEach(form => {
@@ -515,10 +575,10 @@
             if (isCorrect) {
                 correctCount++;
                 comboCount++;
-                document.getElementById('audio-correct').play().catch(()=>{});
+                playSound('audio-correct'); // 共通関数経由に変更
             } else {
                 comboCount = 0;
-                document.getElementById('audio-incorrect').play().catch(()=>{});
+                playSound('audio-incorrect'); // 共通関数経由に変更
                 
                 wrongObjectsPool.push(currentQuestion);
 
@@ -546,12 +606,12 @@
             let comment = "つぎも がんばりましょう！";
             if (rate === 100) {
                 comment = "素晴らしい！パーフェクトです！🎉";
-                document.getElementById('audio-perfect').play().catch(()=>{});
+                playSound('audio-perfect');
             } else if (rate >= 80) {
                 comment = "お見事！よくできました！✨";
-                document.getElementById('audio-good').play().catch(()=>{});
+                playSound('audio-good');
             } else {
-                document.getElementById('audio-cheer').play().catch(()=>{});
+                playSound('audio-cheer');
             }
             document.getElementById('result-comment').innerText = comment;
 
